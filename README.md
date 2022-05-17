@@ -1,4 +1,5 @@
 ![TScheme](assets/logo.png)
+
 **tscheme** is an (in-progress) Scheme interpreter written in Python,
 undertaken as an exercise in programming.
 
