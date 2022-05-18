@@ -9,7 +9,9 @@ class Atom:
     pos: (int, int)
 
     def __repr__(self):
-        return str(self.value)
+        if self.type == "SYMBOL":
+            return f":{self.value}"
+        return repr(self.value)
 
 
 @dataclass
@@ -55,7 +57,7 @@ class Parser:
     def parse_s_expression(self):
         current = self.next_token()
 
-        if current.type in ["NUMBER", "STRING", "IDENTIFIER"]:
+        if current.type in ["NUMBER", "STRING", "IDENTIFIER", "SYMBOL"]:
             return Atom(
                 type=current.type,
                 value=current.value,

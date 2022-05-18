@@ -17,7 +17,7 @@ undertaken as an exercise in programming.
 - [X] Tokenizer
 - [X] Recursive Decent Parser
 - [X] Basic math parsing in interpreter (Lispy Calculator)
-- [ ] Get basic function calls working in `interpreter.py`
+- [X] Get basic function calls working in `interpreter.py`
 - [ ] Write some documentation
 - [ ] Tail call optimisation
 - [ ] New parsing algorithm (?)

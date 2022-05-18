@@ -11,7 +11,7 @@ class Token:
 
 
 class Lexer:
-    DISALLOWED_IDENTIFIER_CHARS = '\"\'();\n\t '
+    DISALLOWED_IDENTIFIER_CHARS = '\"\'():;\n\t '
 
     def __init__(self, source):
         self.position = 0
@@ -91,6 +91,10 @@ class Lexer:
         self.advanceThrough(lambda x: x not in self.DISALLOWED_IDENTIFIER_CHARS)
         return self.endToken("IDENTIFIER")
 
+    def symbol(self):
+        self.advanceThrough(lambda x: x not in self.DISALLOWED_IDENTIFIER_CHARS)
+        return self.endToken("SYMBOL", value=self.currentTokenValue()[1:].upper())
+
     def tokens(self):
         while not self.atEnd:
             self.advanceThrough(lambda x: x in ['\t', '\n', ' '])
@@ -110,6 +114,8 @@ class Lexer:
                     yield self.string()
                 case ";":
                     self.advanceThrough(lambda x: x != "\n")
+                case ":":
+                    yield self.symbol()
                 case _:
                     if char.isdigit():
                         yield self.number()

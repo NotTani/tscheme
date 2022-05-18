@@ -1,3 +1,4 @@
+import functools
 import operator
 from functools import reduce
 import traceback
@@ -5,8 +6,9 @@ import traceback
 from lexer import Lexer
 from parser import Program, SExpression, Atom, Parser
 
+
 TOP_LEVEL = {
-    'z': True,
+    't': True,
     'f': False,
     'nil': None,
     '+': lambda *args: reduce(operator.add, args),
@@ -14,42 +16,47 @@ TOP_LEVEL = {
     '*': lambda *args: reduce(operator.mul, args),
     '/': lambda *args: reduce(operator.truediv, args),
     'car': lambda x: SExpression([x.values[0]], pos=x.pos),
-    'cdr': lambda x: SExpression(x.values[1:], pos=x.pos)
+    'cdr': lambda x: SExpression(x.values[1:], pos=x.pos),
+    'format': lambda format_string, *format_values: print(format_string.format(*format_values))
 }
 
 
-class Environment(dict):
-    def __init__(self, enclosing=None):
+class Environment:
+    def __init__(self, local, enclosing=None):
         super().__init__()
 
         if enclosing is None:
             enclosing = TOP_LEVEL
 
+        self.local = local
         self.enclosing = enclosing
 
     def get(self, key, default=None):
-        print(f"{super().get(key) = }")
-        return k if (k := super().get(key)) else self.enclosing.get(key, default)
-        # except KeyError:
-        #     return self.enclosing.get(key, default)
+        try:
+            return self.local[key]
+        except KeyError:
+            return self.enclosing.get(key, default)
+
+    def __repr__(self):
+        return f"Env({self.local}, enclosing={self.enclosing})"
 
 
 class Lambda:
     def __init__(self, args: list[Atom], body: SExpression, env=None):
         if not env:
-            env = Environment(TOP_LEVEL)
+            env = Environment(local={}, enclosing=TOP_LEVEL)
         self.env = env
 
         self.args = [arg.value for arg in args]
         self.body = body
 
     def __call__(self, *args):
-        call_env = Environment(enclosing=self.env)
-        call_env.update(dict(zip(self.args, args)))
-        return eval_expression(self.body, env=call_env)
+        assert len(args) == len(self.args), "Function called with wrong number of arguments"
+        self.env.local.update(dict(zip(self.args, args)))
+        return eval_expression(self.body, env=self.env)
 
     def __repr__(self):
-        return f"#(ANONYMOUS FUNCTION WITH ARGS ({', '.join(self.args)}))"
+        return f"#(ANONYMOUS FUNCTION at f{hex(id(self))} WITH ARGS ({', '.join(self.args)}))"
 
 
 def is_identifier(value):
@@ -63,6 +70,8 @@ def resolve_atom(value: Atom, env):
                 return v
             else:
                 raise RuntimeError(f"Could not dereference unknown identifier `{value.value}` at {value.pos}")
+        elif value.type == "SYMBOL":
+            return value
         return value.value
     return value
 
@@ -72,7 +81,9 @@ def eval_expression(value: SExpression | Atom, env=None):
         env = TOP_LEVEL
 
     if isinstance(value, Atom):
-        return resolve_atom(value, env)
+        value = resolve_atom(value, env)
+        return value
+
     elif isinstance(value, SExpression):
         match value.values:
             case []:
@@ -101,17 +112,20 @@ def eval_expression(value: SExpression | Atom, env=None):
                     assert is_identifier(args[0]), "the first argument of let must be an identifier"
 
                     env[args[0].value] = eval_expression(args[1])
+                elif is_identifier(op) and op_name == "defmacro":
+                    assert len(args) == 2, f"defmacro at {value.pos} must have two args"
+
                 elif not callable(resolve_atom(op, env)):
                     return SExpression(list(map(eval_expression, [op, *args])), pos=value.pos)
                 else:
                     op_func = resolve_atom(op, env)
-                    args = list(map(eval_expression, args))
+                    args = list(map(functools.partial(eval_expression, env=env), args))
                     return op_func(*args)
 
 
 def eval_and_print_program(p: Program):
     for statement in p.expressions:
-        print(eval_expression(statement))
+        print(repr(eval_expression(statement)))
 
 
 if __name__ == "__main__":
@@ -122,5 +136,6 @@ if __name__ == "__main__":
         # print(f"Parsed output: {Parser(tokens).parse()}")
         try:
             eval_and_print_program(Parser(tokens).parse())
-        except BaseException as e:
-            traceback.print_exc()
+        except Exception as e:
+
+            print(e)
