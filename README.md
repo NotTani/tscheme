@@ -9,8 +9,8 @@ undertaken as an exercise in programming.
 - **Parser** (`parser.py`) - Tested working, could use some
   additional work to avoid stack overflows with very nested 
   expressions
-- **Interpreter** (`interpreter.py`) - Sketchy at best, the
-  evaluation function is pretty good but scoping and envs
+- **Interpreter** (`interpreter.py`) - The evaluation
+  function is pretty good but scoping and environments
   need some work.
 
 ### To-do
